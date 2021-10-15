@@ -1,0 +1,113 @@
+---
+title: "W7_gapminder_functions"
+author: "Agnes Boel Nielsen"
+date: "10/15/2021"
+output: html_document
+---
+
+```{r setup, echo=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, echo = FALSE, include=FALSE}
+# install.packages("gganimate")
+# install.packages("gifski")
+# install.packages("av")
+# install.packages("gapminder")
+library(tidyverse)
+library(gganimate)
+library(gifski)
+library(av)
+library(gapminder)
+library(scales)
+library(dplyr)
+```
+
+
+## Exercises
+
+1. **_Define a defensive function that calculates the Gross Domestic Product of a nation from the data available in the gapminder dataset. You can use the population and GDPpercapita columns for it. Using that function, calculate the GDP of Denmark in the following years: 1967, 1977, 1987, 1997, 2007, and 2017._**
+
+Before defining the function, I use `read.csv()` to create the dataframe, `gapminder`:
+```{r read.csv gapminder}
+gapminder <- read.csv("data/gapminder_data.csv")
+```
+
+Then the function, `gdp_nation`, which calculates the Gross Domestic Product of a given nation, is defined.
+
+`year` and `country` are added as arguments of the function, and the `if()`-statements allow for the data to be subset by `year` if the year argument is not empty and then by `country` if the country argument is not empty.
+
+The actual calculation of GDP follows and simply multiplies the values from the `gdpPercap`-column with the ones from the `pop`-column.
+
+The calculated GDP is added as a new column `gdp` and the final action the function completes is returning the final result.
+```{r gdp_nation function}
+gdp_nation <- function(gapminder,year=NULL, country=NULL){
+  if(!is.null(year)) {
+    gapminder <- gapminder[gapminder$year %in% year, ]
+  }
+  if(!is.null(country)) {
+    gapminder <- gapminder[gapminder$country %in% country,]
+  }
+  gdp <- (gapminder$gdpPercap * gapminder$pop)
+  new <- cbind(gapminder, gdp=gdp)
+  return(new)
+}
+
+```
+
+Now the function is applied to the dataset. `country` is specified for `Denmark` and year for the list of years `1967,1977,1987,1997,2007,2017`.
+```{r using the function}
+gdp_nation(head(gdp_nation(gapminder,country = "Denmark",year=c(1967,1977,1987,1997,2007,2017))))
+```
+
+Now, we get a neat list of information only about Denmark in the specified year, and the new column indicating GDP is also seen. I have no idea why it *shows up twice though*.... And also, it seems like there is **no data from 2017** in the dataset as this does not show up.
+
+
+2. **_Write a script that loops over each country in the gapminder dataset, tests whether the country starts with a ‘B’, and prints out whether the life expectancy is smaller than 50, between 50 and 70, or greater than 70._** 
+
+Before writing the code for the loop, I create a new vector containing only the countries which start with a `B`.
+
+I also create vlues for the lower and upper thresholds, 50 and 70.
+
+Finally, I print the values in the `BCountries`-vector, to check that these are correct.
+```{r loop beginning}
+BCountries <- grep("^B", unique(gapminder$country), value = TRUE)
+lowerThreshold <- 50
+upperThreshold <- 70
+
+for(iCountry in BCountries){
+  print(iCountry)
+}
+```
+
+If I simply wanted to see a list of the countries starting with B and their respective mean life expectancy, this would be the way to do it:
+```{r loop middle}
+
+for(iCountry in BCountries){
+  tmp <- gapminder[gapminder$country == iCountry,]
+  cat(iCountry,mean(tmp$lifeExp, na.rm = TRUE),"\n")
+  rm(tmp)
+}
+```
+
+However, I want to create a loop which tells me which countries in `BCountries` have a mean life expectancy lower than 50, between 50 and 70, and higher than 70. I do this here:
+```{r loop end}
+
+tmp <- mean(gapminder["lifeExp"])
+tmp
+
+for (iCountry in BCountries) {
+    tmp <- mean(gapminder[gapminder$country == iCountry, "lifeExp"])
+
+    if(tmp < lowerThreshold) {
+        cat("Average life expectancy in", iCountry, "is less than", lowerThreshold, "years \n")
+    } else if(tmp >= lowerThreshold && tmp <= upperThreshold) {
+        cat("Average life expectancy in", iCountry, "is between", lowerThreshold, "and", upperThreshold, "years \n")
+    } else {
+        cat("Average life expectancy in", iCountry, "is greater than", upperThreshold, "years \n")
+    }
+    rm(tmp)
+}
+```
+
+
